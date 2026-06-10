@@ -45,53 +45,51 @@ def index():
 
 @app.route("/api/chart")
 def get_chart():
-    # clear any previous charts
-    plt.clf()
+    try:
+        # clear any previous charts
+        plt.clf()
 
-    file_path = 'data.csv'
-    population_data = online_population(file_path)
+        file_path = 'data.csv'
+        if not os.path.exists(file_path):
+            return jsonify({"error": f"Critical Error: Data file '{file_path}' was not found in the project directory."}), 404
 
+        population_data = online_population(file_path)
 
-def plot_population_by_continent(population_by_continent):
-    # loop over each continent and plot each continent and population by year
-    for continent in population_by_continent:
-        years = population_by_continent[continent]['years']
-        population_continent = (
-            population_by_continent[continent]['population'])
+        # Check if your CSV parser returned an empty dictionary
+        if not population_data:
+            return jsonify({"error": "Data file found, but the parsed dictionary is empty. Check your CSV column headers."}), 400
 
-    # create a plot for each continent
-        plt.plot(years, population_continent,
-                 label=continent, alpha=0.5, marker='+')
+        # 2. Map line data points
+        for continent in population_data:
+            years = population_data[continent]['years']
+            population_continent = population_data[continent]['population']
+            plt.plot(years, population_continent,
+                     label=continent, alpha=0.7, marker='+')
+
+        # 3. Apply labels and structural layouts
+        plt.title("Online Population by Continent")
+        plt.xlabel("Year")
+        plt.ylabel("Population (in billions)")
+        plt.grid(True)
         plt.legend()
+        plt.tight_layout()
 
+        # 4. Stream and translate to base64
+        img_buf = io.BytesIO()
+        plt.savefig(img_buf, format='png')
+        img_buf.seek(0)
 
-# create ploy labels outside of function
-    plt.title("Online Population by Continent")
-    plt.xlabel("Year")
-    plt.ylabel("Population (in billions)")
-    plt.grid(True)
-    plt.tight_layout()
+        img_base64 = base64.b64encode(img_buf.getvalue()).decode('utf-8')
+        plt.close()
 
-# New for Flask
-# Save the plot to an in-memory buffer instead of a file on disk
-    img_buf = io.BytesIO()
-    plt.savefig(img_buf, format='png')
-    img_buf.seek(0)
+        # Successful return statement
+        return jsonify({"chart_image": f"data:image/png;base64,{img_base64}"})
 
-# Encode the image to base64 string so HTML/JS can read it instantly
-    img_base64 = base64.b64encode(img_buf.getvalue()).decode('utf-8')
-    plt.close()
-
-# create file path
-# file_path = 'data.csv'
-# population_by_continent = online_population(file_path)
-# plot_population_by_continent(population_by_continent)
-
-    return jsonify({"chart_image": f"data:image/png;base64,{img_base64}"})
+    except Exception as e:
+        # If ANY structural processing error happens, pass the error string back to the browser safely
+        return jsonify({"error": f"Internal Application Error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
-# plt.show()
