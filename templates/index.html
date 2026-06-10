@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Population Analytics | Portfolio</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<div class="spa-container">
+    <h1>📊 Global Population Metrics</h1>
+    <p class="subtitle">An interactive SPA data visualization built with Flask & Matplotlib.</p>
+    
+    <button class="btn-load" id="loadChartBtn">Generate Live Analytics</button>
+
+    <div class="chart-wrapper" id="chartWrapper">
+        <p class="loading-text" id="statusMessage">Click the button above to load data from the CSV backend asynchronously.</p>
+        <img id="populationChart" class="chart-img" style="display: none;" alt="Population Chart">
+    </div>
+</div>
+
+<script>
+    document.getElementById('loadChartBtn').addEventListener('click', () => {
+        const statusMsg = document.getElementById('statusMessage');
+        const chartImg = document.getElementById('populationChart');
+        
+        statusMsg.innerText = "Fetching dataset and compiling visualization...";
+        statusMsg.style.display = "block";
+        chartImg.style.display = "none";
+
+        // Asynchronously call backend endpoint without changing/reloading the URL path
+        fetch('/api/chart')
+            .then(response => response.json())
+            .then(data => {
+                if (data.chart_image) {
+                    statusMsg.style.display = "none";
+                    chartImg.src = data.chart_image;
+                    chartImg.style.display = "block";
+                } else {
+                    statusMsg.innerText = "Failed to load visualization data.";
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                statusMsg.innerText = "Error contacting backend API.";
+            });
+    });
+</script>
+
+</body>
+</html>
