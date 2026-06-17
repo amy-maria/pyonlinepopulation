@@ -10,6 +10,8 @@ matplotlib.use("Agg")
 
 app = Flask(__name__)
 
+# ... your routes go here ...
+
 
 def online_population(file_path):
     population_by_continent = {}
@@ -49,7 +51,8 @@ def get_chart():
         # clear any previous charts
         plt.clf()
 
-        file_path = 'data.csv'
+        file_path = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'data.csv')
         if not os.path.exists(file_path):
             return jsonify({"error": f"Critical Error: Data file '{file_path}' was not found in the project directory."}), 404
 
@@ -80,7 +83,6 @@ def get_chart():
         img_buf.seek(0)
 
         img_base64 = base64.b64encode(img_buf.getvalue()).decode('utf-8')
-        plt.close()
 
         # Successful return statement
         return jsonify({"chart_image": f"data:image/png;base64,{img_base64}"})
@@ -88,6 +90,8 @@ def get_chart():
     except Exception as e:
         # If ANY structural processing error happens, pass the error string back to the browser safely
         return jsonify({"error": f"Internal Application Error: {str(e)}"}), 500
+    finally:
+        plt.close()
 
 
 if __name__ == "__main__":
